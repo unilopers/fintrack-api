@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-
 import java.util.List;
 
 @Entity
@@ -22,28 +21,16 @@ public class User {
     @Email(message = "O e-mail informado não é válido.")
     private String email;
 
-    @NotBlank(message = "A senha é obrigatória.")
-    private String password;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("user") // evita loop
     private List<Account> accounts;
 
     public User() {}
 
-    public User(Long id, String name, String email, String password) {
+    public User(Long id, String name, String email) {
         this.id = id;
         this.name = name;
         this.email = email;
-        this.password = password;
-
-    }
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public String getEmail() {
@@ -84,7 +71,6 @@ public class User {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
                 '}';
     }
 }

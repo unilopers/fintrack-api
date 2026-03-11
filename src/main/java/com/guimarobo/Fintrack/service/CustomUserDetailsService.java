@@ -1,13 +1,13 @@
 package com.guimarobo.Fintrack.service;
 
-import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.UserRepository;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
-public class CustomUserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
@@ -15,7 +15,9 @@ public class CustomUserDetailsService {
         this.userRepository = userRepository;
     }
 
-    public Optional<User> loadUserByEmail(String email) {
-        return userRepository.findByEmail(email);
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
     }
 }

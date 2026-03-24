@@ -1,10 +1,12 @@
 package com.guimarobo.Fintrack.controller;
 
 import com.guimarobo.Fintrack.model.Account;
+import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,52 +22,41 @@ public class AccountController {
         this.accountService = accountService;
     }
 
-    // POST — Criar conta
     @PostMapping
-    public ResponseEntity<Account> createAccount(@Valid @RequestBody Account account) {
-        Account newAccount = accountService.save(account);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newAccount);
+    public ResponseEntity<Account> createAccount(@Valid @RequestBody Account account,
+                                                 @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.save(account, user));
     }
 
-    // GET — Listar todas as contas
     @GetMapping
-    public ResponseEntity<List<Account>> getAllAccounts() {
-        List<Account> accounts = accountService.findAll();
-
-        if (accounts.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(accounts);
+    public ResponseEntity<List<Account>> getAllAccounts(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(accountService.findAll(user));
     }
 
-    // GET — Buscar conta por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Account> getAccountById(@PathVariable Long id) {
-        Account account = accountService.findById(id);
-        return ResponseEntity.ok(account);
+    public ResponseEntity<Account> getAccountById(@PathVariable Long id,
+                                                  @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(accountService.findById(id, user));
     }
 
-    // PUT — Atualizar conta
     @PutMapping("/{id}")
     public ResponseEntity<Account> updateAccount(@PathVariable Long id,
-                                                 @Valid @RequestBody Account updatedAccount) {
-        Account account = accountService.update(id, updatedAccount);
-        return ResponseEntity.ok(account);
+                                                 @Valid @RequestBody Account updatedAccount,
+                                                 @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(accountService.update(id, updatedAccount, user));
     }
 
-    // PATCH — Atualizar parcialmente conta
     @PatchMapping("/{id}")
     public ResponseEntity<Account> patchAccount(@PathVariable Long id,
-                                                @RequestBody Map<String, String> fields) {
-        Account account = accountService.patch(id, fields);
-        return ResponseEntity.ok(account);
+                                                @RequestBody Map<String, String> fields,
+                                                @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(accountService.patch(id, fields, user));
     }
 
-    // DELETE — Deletar conta
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable Long id) {
-        accountService.delete(id);
+    public ResponseEntity<Void> deleteAccount(@PathVariable Long id,
+                                              @AuthenticationPrincipal User user) {
+        accountService.delete(id, user);
         return ResponseEntity.noContent().build();
     }
 }

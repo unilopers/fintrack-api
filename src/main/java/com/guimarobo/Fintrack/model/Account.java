@@ -28,7 +28,6 @@ public class Account {
     @ManyToOne // relacionamento muitos pra um
     @JoinColumn(name = "user_id", nullable = false) // chave estrangeira, nao pode ser null
     @JsonIgnoreProperties("accounts") // evitar loop
-    @NotNull(message = "O usuário da conta é obrigatório")
     private User user;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)

@@ -4,6 +4,7 @@ import com.guimarobo.Fintrack.exception.NotFoundException;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,9 +14,11 @@ import java.util.Map;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -67,6 +70,14 @@ public class UserServiceImpl implements UserService {
                 throw new IllegalArgumentException("Email não pode ser vazio.");
             }
             existingUser.setEmail(email);
+        }
+
+        if (fields.containsKey("password")) {
+            String password = fields.get("password");
+            if (password == null || password.isBlank()) {
+                throw new IllegalArgumentException("A senha não pode ser vazia.");
+            }
+            existingUser.setPassword(passwordEncoder.encode(password));
         }
 
         return userRepository.save(existingUser);

@@ -4,7 +4,6 @@ import com.guimarobo.Fintrack.exception.NotFoundException;
 import com.guimarobo.Fintrack.model.Account;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
-import com.guimarobo.Fintrack.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -16,82 +15,62 @@ import java.util.Map;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final UserRepository userRepository;
 
-    public AccountServiceImpl(AccountRepository accountRepository, UserRepository userRepository) {
+    public AccountServiceImpl(AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
-        this.userRepository = userRepository;
     }
 
     @Override
-    public List<Account> findAll() {
-        return accountRepository.findAll();
+    public List<Account> findAll(User user) {
+        return accountRepository.findByUser(user);
     }
 
     @Override
-    public Account findById(Long id) {
-        return accountRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Conta não encontrada"));
+    public Account findById(Long id, User user) {
+        return accountRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NotFoundException("Conta não encontrada."));
     }
 
     @Override
     @Transactional
-    public Account save(Account account) {
-        if (account.getUser() == null || account.getUser().getId() == null) {
-            throw new IllegalArgumentException("Usuário da conta não informado.");
-        }
-
-        User user = userRepository.findById(account.getUser().getId())
-                .orElseThrow(() -> new NotFoundException("Usuário não encontrado."));
-
+    public Account save(Account account, User user) {
         account.setUser(user);
         return accountRepository.save(account);
     }
 
     @Override
     @Transactional
-    public Account update(Long id, Account updatedAccount) {
-        Account existingAccount = findById(id);
-
-        if (updatedAccount.getUser() == null || updatedAccount.getUser().getId() == null) {
-            throw new IllegalArgumentException("Usuário da conta não informado.");
-        }
-
-        User user = userRepository.findById(updatedAccount.getUser().getId())
-                .orElseThrow(() -> new NotFoundException("Usuário não encontrado."));
-
+    public Account update(Long id, Account updatedAccount, User user) {
+        Account existingAccount = findById(id, user);
         existingAccount.setBankName(updatedAccount.getBankName());
         existingAccount.setAccountType(updatedAccount.getAccountType());
         existingAccount.setBalance(updatedAccount.getBalance());
-        existingAccount.setUser(user);
-
         return accountRepository.save(existingAccount);
     }
 
     @Override
     @Transactional
-    public Account patch(Long id, Map<String, String> fields) {
+    public Account patch(Long id, Map<String, String> fields, User user) {
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException("Nenhum campo informado para atualização.");
         }
 
-        String newBankName = null;
-        String newAccountType = null;
-        BigDecimal newBalance = null;
-        User newUser = null;
+        Account existingAccount = findById(id, user);
 
         if (fields.containsKey("bankName")) {
-            newBankName = fields.get("bankName");
-            if (newBankName == null || newBankName.isBlank()) {
+            String bankName = fields.get("bankName");
+            if (bankName == null || bankName.isBlank()) {
                 throw new IllegalArgumentException("O nome do banco não pode ser vazio.");
             }
+            existingAccount.setBankName(bankName);
         }
 
         if (fields.containsKey("accountType")) {
-            newAccountType = fields.get("accountType");
-            if (newAccountType == null || newAccountType.isBlank()) {
+            String accountType = fields.get("accountType");
+            if (accountType == null || accountType.isBlank()) {
                 throw new IllegalArgumentException("O tipo da conta não pode ser vazio.");
             }
+            existingAccount.setAccountType(accountType);
         }
 
         if (fields.containsKey("balance")) {
@@ -100,39 +79,19 @@ public class AccountServiceImpl implements AccountService {
                 throw new IllegalArgumentException("O saldo não pode ser vazio.");
             }
             try {
-                newBalance = new BigDecimal(balanceStr);
+                existingAccount.setBalance(new BigDecimal(balanceStr));
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Saldo inválido. Informe um número válido.");
             }
         }
-
-        if (fields.containsKey("userId")) {
-            String userIdStr = fields.get("userId");
-            if (userIdStr == null || userIdStr.isBlank()) {
-                throw new IllegalArgumentException("O ID do usuário não pode ser vazio.");
-            }
-            try {
-                Long userId = Long.parseLong(userIdStr);
-                newUser = userRepository.findById(userId)
-                        .orElseThrow(() -> new NotFoundException("Usuário não encontrado."));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("ID de usuário inválido. Informe um número válido.");
-            }
-        }
-
-        Account existingAccount = findById(id);
-
-        if (newBankName != null) existingAccount.setBankName(newBankName);
-        if (newAccountType != null) existingAccount.setAccountType(newAccountType);
-        if (newBalance != null) existingAccount.setBalance(newBalance);
-        if (newUser != null) existingAccount.setUser(newUser);
 
         return accountRepository.save(existingAccount);
     }
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        accountRepository.delete(findById(id));
+    public void delete(Long id, User user) {
+        Account account = findById(id, user);
+        accountRepository.delete(account);
     }
 }

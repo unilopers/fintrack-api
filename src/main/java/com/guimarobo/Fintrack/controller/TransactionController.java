@@ -1,10 +1,12 @@
 package com.guimarobo.Fintrack.controller;
 
 import com.guimarobo.Fintrack.model.Transaction;
+import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.TransactionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,52 +22,41 @@ public class TransactionController {
         this.transactionService = transactionService;
     }
 
-    // POST — Criar transação
     @PostMapping
-    public ResponseEntity<Transaction> createTransaction(@Valid @RequestBody Transaction transaction) {
-        Transaction savedTransaction = transactionService.save(transaction);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedTransaction);
+    public ResponseEntity<Transaction> createTransaction(@Valid @RequestBody Transaction transaction,
+                                                         @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.save(transaction, user));
     }
 
-    // GET — Listar transações
     @GetMapping
-    public ResponseEntity<List<Transaction>> getAllTransactions() {
-        List<Transaction> transactions = transactionService.findAll();
-
-        if (transactions.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(transactions);
+    public ResponseEntity<List<Transaction>> getAllTransactions(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(transactionService.findAll(user));
     }
 
-    // GET — Buscar transação por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Transaction> getTransactionById(@PathVariable Long id) {
-        Transaction transaction = transactionService.findById(id);
-        return ResponseEntity.ok(transaction);
+    public ResponseEntity<Transaction> getTransactionById(@PathVariable Long id,
+                                                          @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(transactionService.findById(id, user));
     }
 
-    // PUT — Atualizar transação
     @PutMapping("/{id}")
     public ResponseEntity<Transaction> updateTransaction(@PathVariable Long id,
-                                                         @Valid @RequestBody Transaction updatedTransaction) {
-        Transaction saved = transactionService.update(id, updatedTransaction);
-        return ResponseEntity.ok(saved);
+                                                         @Valid @RequestBody Transaction updatedTransaction,
+                                                         @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(transactionService.update(id, updatedTransaction, user));
     }
 
-    // PATCH — Atualizar parcialmente transação
     @PatchMapping("/{id}")
     public ResponseEntity<Transaction> patchTransaction(@PathVariable Long id,
-                                                        @RequestBody Map<String, String> fields) {
-        Transaction transaction = transactionService.patch(id, fields);
-        return ResponseEntity.ok(transaction);
+                                                        @RequestBody Map<String, String> fields,
+                                                        @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(transactionService.patch(id, fields, user));
     }
 
-    // DELETE — Apagar transação
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
-        transactionService.delete(id);
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id,
+                                                  @AuthenticationPrincipal User user) {
+        transactionService.delete(id, user);
         return ResponseEntity.noContent().build();
     }
 }

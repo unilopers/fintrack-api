@@ -3,6 +3,7 @@ package com.guimarobo.Fintrack.service;
 import com.guimarobo.Fintrack.exception.NotFoundException;
 import com.guimarobo.Fintrack.model.Account;
 import com.guimarobo.Fintrack.model.Transaction;
+import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
 import com.guimarobo.Fintrack.repository.TransactionRepository;
 import jakarta.transaction.Transactional;
@@ -19,25 +20,26 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository,
+                                  AccountRepository accountRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
     }
 
     @Override
-    public List<Transaction> findAll() {
-        return transactionRepository.findAll();
+    public List<Transaction> findAll(User user) {
+        return transactionRepository.findByAccountUser(user);
     }
 
     @Override
-    public Transaction findById(Long id) {
-        return transactionRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Transação não encontrada"));
+    public Transaction findById(Long id, User user) {
+        return transactionRepository.findByIdAndAccountUser(id, user)
+                .orElseThrow(() -> new NotFoundException("Transação não encontrada."));
     }
 
     @Override
     @Transactional
-    public Transaction save(Transaction transaction) {
+    public Transaction save(Transaction transaction, User user) {
         if (transaction.getAccount() == null || transaction.getAccount().getId() == null) {
             throw new IllegalArgumentException("A conta relacionada é obrigatória.");
         }
@@ -46,8 +48,8 @@ public class TransactionServiceImpl implements TransactionService {
             throw new IllegalArgumentException("O valor da transação deve ser maior que zero.");
         }
 
-        Account account = accountRepository.findById(transaction.getAccount().getId())
-                .orElseThrow(() -> new NotFoundException("Conta não encontrada"));
+        Account account = accountRepository.findByIdAndUser(transaction.getAccount().getId(), user)
+                .orElseThrow(() -> new NotFoundException("Conta não encontrada."));
 
         applyBalanceChange(account, transaction.getType(), transaction.getAmount());
         accountRepository.save(account);
@@ -58,7 +60,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public Transaction update(Long id, Transaction updatedTransaction) {
+    public Transaction update(Long id, Transaction updatedTransaction, User user) {
         if (updatedTransaction.getAccount() == null || updatedTransaction.getAccount().getId() == null) {
             throw new IllegalArgumentException("A conta relacionada é obrigatória.");
         }
@@ -67,11 +69,11 @@ public class TransactionServiceImpl implements TransactionService {
             throw new IllegalArgumentException("O valor da transação deve ser maior que zero.");
         }
 
-        Transaction existingTransaction = findById(id);
+        Transaction existingTransaction = findById(id, user);
 
         Account oldAccount = existingTransaction.getAccount();
-        Account newAccount = accountRepository.findById(updatedTransaction.getAccount().getId())
-                .orElseThrow(() -> new NotFoundException("Conta não encontrada"));
+        Account newAccount = accountRepository.findByIdAndUser(updatedTransaction.getAccount().getId(), user)
+                .orElseThrow(() -> new NotFoundException("Conta não encontrada."));
 
         revertBalanceChange(oldAccount, existingTransaction.getType(), existingTransaction.getAmount());
 
@@ -93,7 +95,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public Transaction patch(Long id, Map<String, String> fields) {
+    public Transaction patch(Long id, Map<String, String> fields, User user) {
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException("Nenhum campo informado para atualização.");
         }
@@ -157,7 +159,7 @@ public class TransactionServiceImpl implements TransactionService {
             }
             try {
                 Long accountId = Long.parseLong(accountIdStr);
-                newAccount = accountRepository.findById(accountId)
+                newAccount = accountRepository.findByIdAndUser(accountId, user)
                         .orElseThrow(() -> new NotFoundException("Conta não encontrada."));
                 accountChanged = true;
             } catch (NumberFormatException e) {
@@ -165,7 +167,7 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
-        Transaction existingTransaction = findById(id);
+        Transaction existingTransaction = findById(id, user);
         boolean balanceAffected = newAmount != null || newType != null || accountChanged;
         Account oldAccount = existingTransaction.getAccount();
 
@@ -193,8 +195,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        Transaction transaction = findById(id);
+    public void delete(Long id, User user) {
+        Transaction transaction = findById(id, user);
         Account account = transaction.getAccount();
         revertBalanceChange(account, transaction.getType(), transaction.getAmount());
         accountRepository.save(account);

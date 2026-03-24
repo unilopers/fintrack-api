@@ -2,12 +2,10 @@ package com.guimarobo.Fintrack.controller;
 
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.UserService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,50 +18,32 @@ public class UserController {
         this.userService = userService;
     }
 
-    // GET - Listar todos os usuários
-    @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.findAll();
-
-        if (users.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(users);
+    // GET - Buscar dados do próprio usuário autenticado
+    @GetMapping("/me")
+    public ResponseEntity<User> getAuthenticatedUser(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(userService.findById(user.getId()));
     }
 
-    // GET - Buscar usuário por ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.findById(id);
-        return ResponseEntity.ok(user);
-    }
-
-    // POST - Criar usuário
-    @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        User createdUser = userService.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
-    }
-
-    // PUT - Atualizar usuário existente
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User updatedUser) {
-        User savedUser = userService.update(id, updatedUser);
+    // PUT - Atualizar dados do próprio usuário autenticado
+    @PutMapping("/me")
+    public ResponseEntity<User> updateAuthenticatedUser(@AuthenticationPrincipal User user,
+                                                        @RequestBody User updatedUser) {
+        User savedUser = userService.update(user.getId(), updatedUser);
         return ResponseEntity.ok(savedUser);
     }
 
-    // PATCH - Atualizar parcialmente usuário
-    @PatchMapping("/{id}")
-    public ResponseEntity<User> patchUser(@PathVariable Long id, @RequestBody Map<String, String> fields) {
-        User updatedUser = userService.patch(id, fields);
+    // PATCH - Atualizar parcialmente dados do próprio usuário autenticado
+    @PatchMapping("/me")
+    public ResponseEntity<User> patchAuthenticatedUser(@AuthenticationPrincipal User user,
+                                                       @RequestBody Map<String, String> fields) {
+        User updatedUser = userService.patch(user.getId(), fields);
         return ResponseEntity.ok(updatedUser);
     }
 
-    // DELETE - Deletar usuário por ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.delete(id);
+    // DELETE - Deletar a própria conta
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteAuthenticatedUser(@AuthenticationPrincipal User user) {
+        userService.delete(user.getId());
         return ResponseEntity.noContent().build();
     }
 }

@@ -6,6 +6,7 @@ import com.guimarobo.Fintrack.model.Transaction;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
 import com.guimarobo.Fintrack.repository.TransactionRepository;
+import com.guimarobo.Fintrack.worker.LowBalanceAlertWorker;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +20,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
+    private final LowBalanceAlertWorker lowBalanceAlertWorker;
 
     public TransactionServiceImpl(TransactionRepository transactionRepository,
-                                  AccountRepository accountRepository) {
+                                  AccountRepository accountRepository,
+                                  LowBalanceAlertWorker lowBalanceAlertWorker) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.lowBalanceAlertWorker = lowBalanceAlertWorker;
     }
 
     @Override
@@ -53,6 +57,10 @@ public class TransactionServiceImpl implements TransactionService {
 
         applyBalanceChange(account, transaction.getType(), transaction.getAmount());
         accountRepository.save(account);
+
+        if (transaction.getType().equalsIgnoreCase("DESPESA")) {
+            lowBalanceAlertWorker.verificarSaldo(account);
+        }
 
         transaction.setAccount(account);
         return transactionRepository.save(transaction);

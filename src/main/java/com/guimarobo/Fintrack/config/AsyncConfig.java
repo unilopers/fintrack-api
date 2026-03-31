@@ -21,4 +21,16 @@ public class AsyncConfig {
         exec.initialize();
         return exec;
     }
+
+    @Bean(name = "fintrackPool")
+    public Executor fintrackPool() {
+        ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+        exec.setCorePoolSize(2);
+        exec.setMaxPoolSize(5);
+        exec.setQueueCapacity(20);
+        exec.setThreadNamePrefix("fintrack-async-");
+        exec.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        exec.initialize();
+        return exec;
+    }
 }

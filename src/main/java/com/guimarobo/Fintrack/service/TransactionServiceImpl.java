@@ -7,6 +7,7 @@ import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
 import com.guimarobo.Fintrack.repository.TransactionRepository;
 import com.guimarobo.Fintrack.worker.TransactionCategorizationWorker;
+import com.guimarobo.Fintrack.worker.LowBalanceAlertWorker;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +22,17 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final TransactionCategorizationWorker categorizationWorker;
+    private final LowBalanceAlertWorker lowBalanceAlertWorker;
 
     public TransactionServiceImpl(TransactionRepository transactionRepository,
                                   AccountRepository accountRepository,
-                                  TransactionCategorizationWorker categorizationWorker) {
+                                  TransactionCategorizationWorker categorizationWorker,
+                                  LowBalanceAlertWorker lowBalanceAlertWorker) {
+
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.categorizationWorker = categorizationWorker;
+        this.lowBalanceAlertWorker = lowBalanceAlertWorker;
     }
 
     @Override

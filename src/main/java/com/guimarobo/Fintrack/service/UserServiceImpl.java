@@ -1,5 +1,6 @@
 package com.guimarobo.Fintrack.service;
 
+import com.guimarobo.Fintrack.async.worker.AuditLogWorker;
 import com.guimarobo.Fintrack.exception.NotFoundException;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.UserRepository;
@@ -7,6 +8,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -15,10 +17,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogWorker auditLogWorker;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           AuditLogWorker auditLogWorker) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogWorker = auditLogWorker;
     }
 
     @Override
@@ -44,7 +50,9 @@ public class UserServiceImpl implements UserService {
         User existingUser = findById(id);
         existingUser.setName(updatedUser.getName());
         existingUser.setEmail(updatedUser.getEmail());
-        return userRepository.save(existingUser);
+        User saved = userRepository.save(existingUser);
+        auditLogWorker.registrarAuditoria(saved.getName(), "UPDATE", LocalDateTime.now());
+        return saved;
     }
 
     @Override
@@ -80,12 +88,16 @@ public class UserServiceImpl implements UserService {
             existingUser.setPassword(passwordEncoder.encode(password));
         }
 
-        return userRepository.save(existingUser);
+        User saved = userRepository.save(existingUser);
+        auditLogWorker.registrarAuditoria(saved.getName(), "PATCH", LocalDateTime.now());
+        return saved;
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        userRepository.delete(findById(id));
+        User user = findById(id);
+        userRepository.delete(user);
+        auditLogWorker.registrarAuditoria(user.getName(), "DELETE", LocalDateTime.now());
     }
 }

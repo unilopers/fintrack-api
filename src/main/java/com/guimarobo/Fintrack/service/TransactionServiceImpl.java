@@ -6,6 +6,7 @@ import com.guimarobo.Fintrack.model.Transaction;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
 import com.guimarobo.Fintrack.repository.TransactionRepository;
+import com.guimarobo.Fintrack.worker.TransactionCategorizationWorker;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +20,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
+    private final TransactionCategorizationWorker categorizationWorker;
 
     public TransactionServiceImpl(TransactionRepository transactionRepository,
-                                  AccountRepository accountRepository) {
+                                  AccountRepository accountRepository,
+                                  TransactionCategorizationWorker categorizationWorker) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.categorizationWorker = categorizationWorker;
     }
 
     @Override
@@ -55,7 +59,11 @@ public class TransactionServiceImpl implements TransactionService {
         accountRepository.save(account);
 
         transaction.setAccount(account);
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+
+        categorizationWorker.categorizar(saved);
+
+        return saved;
     }
 
     @Override

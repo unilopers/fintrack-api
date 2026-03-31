@@ -27,6 +27,8 @@ public class Transaction {
     @NotNull(message = "A data é obrigatória.")
     private LocalDate date;
 
+    private String category; // ALIMENTACAO, TRANSPORTE, LAZER, MORADIA, OUTROS
+
     @NotNull(message = "A conta relacionada (account) é obrigatória.")
     @ManyToOne // relacionamento muitos pra um
     @JoinColumn(name = "account_id") // chave estrangeira
@@ -82,6 +84,14 @@ public class Transaction {
 
     public void setDate(LocalDate date) {
         this.date = date;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public Account getAccount() {

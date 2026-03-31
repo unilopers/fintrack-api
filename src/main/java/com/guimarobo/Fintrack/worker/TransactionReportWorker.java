@@ -34,8 +34,6 @@ public class TransactionReportWorker {
                 break;
 
             } catch (InterruptedException e) {
-                // Captura separada obrigatória — restaura o interrupt flag
-                // Se ficar dentro do catch genérico, o retry continua com a thread sinalizada
                 Thread.currentThread().interrupt();
                 log.error("Thread interrompida durante geração do relatório — userId={}", user.getId());
                 return;
@@ -57,7 +55,7 @@ public class TransactionReportWorker {
         List<Transaction> transacoes = transactionRepository
                 .findByAccountUserAndDateBetween(user, inicio, fim);
 
-        // IMPORTANTE: o projeto filtra por type ("ENTRADA"/"DESPESA"), não por amount positivo/negativo
+
         BigDecimal totalEntradas = transacoes.stream()
                 .filter(t -> "ENTRADA".equalsIgnoreCase(t.getType()))
                 .map(Transaction::getAmount)

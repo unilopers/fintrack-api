@@ -19,12 +19,6 @@ import java.util.Map;
 @RequestMapping("/transactions")
 public class TransactionController {
 
-    /*private final TransactionService transactionService;
-
-    public TransactionController(TransactionService transactionService) {
-        this.transactionService = transactionService;
-    }*/
-
     private final TransactionService transactionService;
     private final TransactionReportWorker reportWorker;
 

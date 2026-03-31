@@ -10,6 +10,18 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class AsyncConfig {
 
+    @Bean(name = "categorizationPool")
+    public Executor categorizationPool() {
+        ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+        exec.setCorePoolSize(2);
+        exec.setMaxPoolSize(5);
+        exec.setQueueCapacity(20);
+        exec.setThreadNamePrefix("fintrack-async-");
+        exec.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        exec.initialize();
+        return exec;
+    }
+
     @Bean(name = "auditPool")
     public Executor auditPool() {
         ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();

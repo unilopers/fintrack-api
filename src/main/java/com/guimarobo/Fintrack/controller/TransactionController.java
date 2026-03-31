@@ -1,5 +1,6 @@
 package com.guimarobo.Fintrack.controller;
 
+import com.guimarobo.Fintrack.worker.TransactionReportWorker;
 import com.guimarobo.Fintrack.model.Transaction;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.TransactionService;
@@ -9,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 import java.util.List;
 import java.util.Map;
 
@@ -17,9 +20,12 @@ import java.util.Map;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final TransactionReportWorker reportWorker;
 
-    public TransactionController(TransactionService transactionService) {
+    public TransactionController(TransactionService transactionService,
+                                 TransactionReportWorker reportWorker) {
         this.transactionService = transactionService;
+        this.reportWorker = reportWorker;
     }
 
     @PostMapping
@@ -58,5 +64,21 @@ public class TransactionController {
                                                   @AuthenticationPrincipal User user) {
         transactionService.delete(id, user);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/report")
+    public ResponseEntity<String> generateReport(
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano) {
+
+        LocalDate hoje = LocalDate.now();
+        int mesFinal = (mes != null) ? mes : hoje.getMonthValue();
+        int anoFinal = (ano != null) ? ano : hoje.getYear();
+
+        reportWorker.generate(user, mesFinal, anoFinal);
+
+        return ResponseEntity.accepted()
+                .body("Relatório sendo gerado em background para " + mesFinal + "/" + anoFinal);
     }
 }

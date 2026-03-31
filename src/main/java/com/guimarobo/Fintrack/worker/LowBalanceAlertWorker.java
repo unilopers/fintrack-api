@@ -13,7 +13,7 @@ public class LowBalanceAlertWorker {
 
     private static final BigDecimal THRESHOLD = new BigDecimal("100.00");
 
-    @Async("fintrackPool")
+    @Async("fintrackAsyncPool")
     public void verificarSaldo(Account account) {
         try {
             Thread.sleep(500);
@@ -32,7 +32,6 @@ public class LowBalanceAlertWorker {
                         account.getId(),
                         saldo);
             }
-
         } catch (Exception e) {
             log.error("Erro ao verificar saldo da conta ID: {} — {}",
                     account.getId(), e.getMessage());

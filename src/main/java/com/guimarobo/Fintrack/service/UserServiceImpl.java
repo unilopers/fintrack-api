@@ -1,14 +1,14 @@
 package com.guimarobo.Fintrack.service;
 
-import com.guimarobo.Fintrack.async.worker.AuditLogWorker;
+import com.guimarobo.Fintrack.exception.ConflictException;
 import com.guimarobo.Fintrack.exception.NotFoundException;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.UserRepository;
+import com.guimarobo.Fintrack.worker.AuditWorker;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -17,14 +17,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuditLogWorker auditLogWorker;
+    private final AuditWorker auditWorker;
 
     public UserServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
-                           AuditLogWorker auditLogWorker) {
+                           AuditWorker auditWorker) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.auditLogWorker = auditLogWorker;
+        this.auditWorker = auditWorker;
     }
 
     @Override
@@ -40,6 +40,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public User register(String name, String email, String password) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new ConflictException("E-mail já cadastrado.");
+        }
+
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
     public User save(User user) {
         return userRepository.save(user);
     }
@@ -51,7 +66,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setName(updatedUser.getName());
         existingUser.setEmail(updatedUser.getEmail());
         User saved = userRepository.save(existingUser);
-        auditLogWorker.registrarAuditoria(saved.getName(), "UPDATE", LocalDateTime.now());
+        auditWorker.registrarAuditoria(saved.getName(), "UPDATE");
         return saved;
     }
 
@@ -89,7 +104,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User saved = userRepository.save(existingUser);
-        auditLogWorker.registrarAuditoria(saved.getName(), "PATCH", LocalDateTime.now());
+        auditWorker.registrarAuditoria(saved.getName(), "PATCH");
         return saved;
     }
 
@@ -98,6 +113,6 @@ public class UserServiceImpl implements UserService {
     public void delete(Long id) {
         User user = findById(id);
         userRepository.delete(user);
-        auditLogWorker.registrarAuditoria(user.getName(), "DELETE", LocalDateTime.now());
+        auditWorker.registrarAuditoria(user.getName(), "DELETE");
     }
 }

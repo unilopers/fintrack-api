@@ -16,21 +16,17 @@ public class AuditWorker {
 
     @Async("auditPool")
     public void registrarAuditoria(Long userId, String operacao, String detalhe) {
-        log.info("[AUDIT] iniciando registro — userId={} | operacao={}", userId, operacao);
+        String timestamp = LocalDateTime.now().format(FMT);
 
-        try {
-            // simula uma latência real (ex: gravar em arquivo, chamar serviço externo)
-            Thread.sleep(500);
+        log.info("[AUDIT] userId={} | operacao={} | detalhe={} | timestamp={}",
+                userId, operacao, detalhe, timestamp);
+    }
 
-            String timestamp = LocalDateTime.now().format(FMT);
+    @Async("auditPool")
+    public void registrarAuditoria(String nomeUsuario, String acao) {
+        String timestamp = LocalDateTime.now().format(FMT);
 
-            log.info("[AUDIT] ✓ userId={} | operacao={} | detalhe={} | timestamp={}",
-                    userId, operacao, detalhe, timestamp);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("[AUDIT] ✗ Falha ao registrar auditoria — userId={} | operacao={} | erro={}",
-                    userId, operacao, e.getMessage());
-        }
+        log.info("[AUDIT] usuario={} | acao={} | timestamp={}",
+                nomeUsuario, acao, timestamp);
     }
 }

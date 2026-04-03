@@ -1,8 +1,10 @@
 package com.guimarobo.Fintrack.service;
 
+import com.guimarobo.Fintrack.dto.TransactionReportResponse;
 import com.guimarobo.Fintrack.exception.NotFoundException;
 import com.guimarobo.Fintrack.model.Account;
 import com.guimarobo.Fintrack.model.Transaction;
+import com.guimarobo.Fintrack.model.TransactionType;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
 import com.guimarobo.Fintrack.repository.TransactionRepository;
@@ -67,6 +69,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction saved = transactionRepository.save(transaction);
 
         categorizationWorker.categorizar(saved);
+        lowBalanceAlertWorker.verificarSaldo(account);
 
         return saved;
     }
@@ -103,7 +106,10 @@ public class TransactionServiceImpl implements TransactionService {
             accountRepository.save(newAccount);
         }
 
-        return transactionRepository.save(existingTransaction);
+        Transaction saved = transactionRepository.save(existingTransaction);
+        lowBalanceAlertWorker.verificarSaldo(newAccount);
+
+        return saved;
     }
 
     @Override
@@ -115,7 +121,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         String newDescription = null;
         BigDecimal newAmount = null;
-        String newType = null;
+        TransactionType newType = null;
         LocalDate newDate = null;
         Account newAccount = null;
         boolean accountChanged = false;
@@ -143,14 +149,15 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         if (fields.containsKey("type")) {
-            newType = fields.get("type");
-            if (newType == null || newType.isBlank()) {
+            String typeStr = fields.get("type");
+            if (typeStr == null || typeStr.isBlank()) {
                 throw new IllegalArgumentException("O tipo da transação não pode ser vazio.");
             }
-            if (!newType.equalsIgnoreCase("DESPESA") && !newType.equalsIgnoreCase("ENTRADA")) {
-                throw new IllegalArgumentException("Tipo de transação inválido: '" + newType + "'. Use 'DESPESA' ou 'ENTRADA'.");
+            try {
+                newType = TransactionType.valueOf(typeStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Tipo de transação inválido: '" + typeStr + "'. Use 'DESPESA' ou 'ENTRADA'.");
             }
-            newType = newType.toUpperCase();
         }
 
         if (fields.containsKey("date")) {
@@ -203,7 +210,13 @@ public class TransactionServiceImpl implements TransactionService {
             }
         }
 
-        return transactionRepository.save(existingTransaction);
+        Transaction saved = transactionRepository.save(existingTransaction);
+
+        if (balanceAffected) {
+            lowBalanceAlertWorker.verificarSaldo(existingTransaction.getAccount());
+        }
+
+        return saved;
     }
 
     @Override
@@ -214,25 +227,43 @@ public class TransactionServiceImpl implements TransactionService {
         revertBalanceChange(account, transaction.getType(), transaction.getAmount());
         accountRepository.save(account);
         transactionRepository.delete(transaction);
+        lowBalanceAlertWorker.verificarSaldo(account);
     }
 
-    private void applyBalanceChange(Account account, String type, BigDecimal amount) {
-        if (type.equalsIgnoreCase("DESPESA")) {
-            account.setBalance(account.getBalance().subtract(amount));
-        } else if (type.equalsIgnoreCase("ENTRADA")) {
-            account.setBalance(account.getBalance().add(amount));
-        } else {
-            throw new IllegalArgumentException("Tipo de transação inválido: '" + type + "'. Use 'DESPESA' ou 'ENTRADA'.");
+    @Override
+    public TransactionReportResponse generateReport(User user, int mes, int ano) {
+        LocalDate inicio = LocalDate.of(ano, mes, 1);
+        LocalDate fim = inicio.withDayOfMonth(inicio.lengthOfMonth());
+
+        List<Transaction> transacoes = transactionRepository
+                .findByAccountUserAndDateBetween(user, inicio, fim);
+
+        BigDecimal totalEntradas = transacoes.stream()
+                .filter(t -> t.getType() == TransactionType.ENTRADA)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalDespesas = transacoes.stream()
+                .filter(t -> t.getType() == TransactionType.DESPESA)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal saldo = totalEntradas.subtract(totalDespesas);
+
+        return new TransactionReportResponse(mes, ano, totalEntradas, totalDespesas, saldo, transacoes.size());
+    }
+
+    private void applyBalanceChange(Account account, TransactionType type, BigDecimal amount) {
+        switch (type) {
+            case DESPESA -> account.setBalance(account.getBalance().subtract(amount));
+            case ENTRADA -> account.setBalance(account.getBalance().add(amount));
         }
     }
 
-    private void revertBalanceChange(Account account, String type, BigDecimal amount) {
-        if (type.equalsIgnoreCase("DESPESA")) {
-            account.setBalance(account.getBalance().add(amount));
-        } else if (type.equalsIgnoreCase("ENTRADA")) {
-            account.setBalance(account.getBalance().subtract(amount));
-        } else {
-            throw new IllegalArgumentException("Tipo de transação inválido: '" + type + "'. Use 'DESPESA' ou 'ENTRADA'.");
+    private void revertBalanceChange(Account account, TransactionType type, BigDecimal amount) {
+        switch (type) {
+            case DESPESA -> account.setBalance(account.getBalance().add(amount));
+            case ENTRADA -> account.setBalance(account.getBalance().subtract(amount));
         }
     }
 }

@@ -8,10 +8,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "transactions") // criacao table db
+@Table(name = "transactions")
 public class Transaction {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // auto incremento
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "A descrição é obrigatória.")
@@ -21,23 +21,24 @@ public class Transaction {
     @jakarta.validation.constraints.DecimalMin(value = "0.01", message = "O valor da transação deve ser maior que zero.")
     private BigDecimal amount;
 
-    @NotBlank(message = "O tipo da transação é obrigatório (DESPESA ou ENTRADA).")
-    private String type; // ENTRADA ou DESPESA
+    @NotNull(message = "O tipo da transação é obrigatório (DESPESA ou ENTRADA).")
+    @Enumerated(EnumType.STRING)
+    private TransactionType type;
 
     @NotNull(message = "A data é obrigatória.")
     private LocalDate date;
 
-    private String category; // ALIMENTACAO, TRANSPORTE, LAZER, MORADIA, OUTROS
+    private String category;
 
     @NotNull(message = "A conta relacionada (account) é obrigatória.")
-    @ManyToOne // relacionamento muitos pra um
-    @JoinColumn(name = "account_id") // chave estrangeira
-    @JsonIgnoreProperties({"transactions"}) // evitar loop
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    @JsonIgnoreProperties({"transactions"})
     private Account account;
 
     public Transaction() {}
 
-    public Transaction(Long id, String description, BigDecimal amount, String type, LocalDate date, Account account) {
+    public Transaction(Long id, String description, BigDecimal amount, TransactionType type, LocalDate date, Account account) {
         this.id = id;
         this.description = description;
         this.amount = amount;
@@ -70,11 +71,11 @@ public class Transaction {
         this.description = description;
     }
 
-    public String getType() {
+    public TransactionType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(TransactionType type) {
         this.type = type;
     }
 
@@ -108,7 +109,7 @@ public class Transaction {
                 "id=" + id +
                 ", description='" + description + '\'' +
                 ", amount=" + amount +
-                ", type='" + type + '\'' +
+                ", type=" + type +
                 ", date=" + date +
                 '}';
     }

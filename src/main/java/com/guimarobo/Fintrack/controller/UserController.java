@@ -1,8 +1,8 @@
 package com.guimarobo.Fintrack.controller;
 
+import com.guimarobo.Fintrack.dto.UserResponse;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.UserService;
-import com.guimarobo.Fintrack.worker.AuditWorker;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -14,59 +14,38 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
-    private final AuditWorker auditWorker;
 
-    public UserController(UserService userService, AuditWorker auditWorker) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.auditWorker = auditWorker;
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getAuthenticatedUser(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(userService.findById(user.getId()));
+    public ResponseEntity<UserResponse> getAuthenticatedUser(@AuthenticationPrincipal User user) {
+        User found = userService.findById(user.getId());
+        return ResponseEntity.ok(toResponse(found));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<User> updateAuthenticatedUser(@AuthenticationPrincipal User user,
-                                                        @RequestBody User updatedUser) {
+    public ResponseEntity<UserResponse> updateAuthenticatedUser(@AuthenticationPrincipal User user,
+                                                                @RequestBody User updatedUser) {
         User savedUser = userService.update(user.getId(), updatedUser);
-
-        // dispara auditoria em background — response já foi pro cliente
-        auditWorker.registrarAuditoria(
-                user.getId(),
-                "PUT /users/me",
-                "nome atualizado para: " + savedUser.getName()
-        );
-
-        return ResponseEntity.ok(savedUser);
+        return ResponseEntity.ok(toResponse(savedUser));
     }
 
     @PatchMapping("/me")
-    public ResponseEntity<User> patchAuthenticatedUser(@AuthenticationPrincipal User user,
-                                                       @RequestBody Map<String, String> fields) {
+    public ResponseEntity<UserResponse> patchAuthenticatedUser(@AuthenticationPrincipal User user,
+                                                               @RequestBody Map<String, String> fields) {
         User updatedUser = userService.patch(user.getId(), fields);
-
-        auditWorker.registrarAuditoria(
-                user.getId(),
-                "PATCH /users/me",
-                "campos alterados: " + fields.keySet()
-        );
-
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(toResponse(updatedUser));
     }
 
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteAuthenticatedUser(@AuthenticationPrincipal User user) {
-        Long userId = user.getId();
-        userService.delete(userId);
-
-        // captura o ID antes de deletar — user não existe mais depois
-        auditWorker.registrarAuditoria(
-                userId,
-                "DELETE /users/me",
-                "conta removida permanentemente"
-        );
-
+        userService.delete(user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    private UserResponse toResponse(User user) {
+        return new UserResponse(user.getId(), user.getName(), user.getEmail());
     }
 }

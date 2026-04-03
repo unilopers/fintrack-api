@@ -16,8 +16,6 @@ public class LowBalanceAlertWorker {
     @Async("fintrackAsyncPool")
     public void verificarSaldo(Account account) {
         try {
-            Thread.sleep(500);
-
             BigDecimal saldo = account.getBalance();
 
             if (saldo.compareTo(THRESHOLD) < 0) {

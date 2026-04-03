@@ -2,6 +2,7 @@ package com.guimarobo.Fintrack.worker;
 
 import com.guimarobo.Fintrack.model.Transaction;
 import com.guimarobo.Fintrack.repository.TransactionRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class TransactionCategorizationWorker {
     }
 
     @Async("categorizationPool")
+    @Transactional
     public void categorizar(Transaction transaction) {
         try {
             String desc = transaction.getDescription().toLowerCase();
@@ -34,8 +36,7 @@ public class TransactionCategorizationWorker {
                 categoria = "OUTROS";
             }
 
-            transaction.setCategory(categoria);
-            transactionRepository.save(transaction);
+            transactionRepository.updateCategory(transaction.getId(), categoria);
 
             log.info("Transação ID: {} categorizada como {} (descrição: \"{}\")",
                     transaction.getId(), categoria, transaction.getDescription());

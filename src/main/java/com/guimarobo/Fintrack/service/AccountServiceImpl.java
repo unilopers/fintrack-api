@@ -7,7 +7,6 @@ import com.guimarobo.Fintrack.repository.AccountRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +43,6 @@ public class AccountServiceImpl implements AccountService {
         Account existingAccount = findById(id, user);
         existingAccount.setBankName(updatedAccount.getBankName());
         existingAccount.setAccountType(updatedAccount.getAccountType());
-        existingAccount.setBalance(updatedAccount.getBalance());
         return accountRepository.save(existingAccount);
     }
 
@@ -74,15 +72,7 @@ public class AccountServiceImpl implements AccountService {
         }
 
         if (fields.containsKey("balance")) {
-            String balanceStr = fields.get("balance");
-            if (balanceStr == null || balanceStr.isBlank()) {
-                throw new IllegalArgumentException("O saldo não pode ser vazio.");
-            }
-            try {
-                existingAccount.setBalance(new BigDecimal(balanceStr));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Saldo inválido. Informe um número válido.");
-            }
+            throw new IllegalArgumentException("O saldo não pode ser alterado diretamente. Use transações para modificar o saldo.");
         }
 
         return accountRepository.save(existingAccount);

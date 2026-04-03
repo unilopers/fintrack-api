@@ -1,5 +1,6 @@
 package com.guimarobo.Fintrack.controller;
 
+import com.guimarobo.Fintrack.dto.UserResponse;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -18,32 +19,33 @@ public class UserController {
         this.userService = userService;
     }
 
-    // GET - Buscar dados do próprio usuário autenticado
     @GetMapping("/me")
-    public ResponseEntity<User> getAuthenticatedUser(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(userService.findById(user.getId()));
+    public ResponseEntity<UserResponse> getAuthenticatedUser(@AuthenticationPrincipal User user) {
+        User found = userService.findById(user.getId());
+        return ResponseEntity.ok(toResponse(found));
     }
 
-    // PUT - Atualizar dados do próprio usuário autenticado
     @PutMapping("/me")
-    public ResponseEntity<User> updateAuthenticatedUser(@AuthenticationPrincipal User user,
-                                                        @RequestBody User updatedUser) {
+    public ResponseEntity<UserResponse> updateAuthenticatedUser(@AuthenticationPrincipal User user,
+                                                                @RequestBody User updatedUser) {
         User savedUser = userService.update(user.getId(), updatedUser);
-        return ResponseEntity.ok(savedUser);
+        return ResponseEntity.ok(toResponse(savedUser));
     }
 
-    // PATCH - Atualizar parcialmente dados do próprio usuário autenticado
     @PatchMapping("/me")
-    public ResponseEntity<User> patchAuthenticatedUser(@AuthenticationPrincipal User user,
-                                                       @RequestBody Map<String, String> fields) {
+    public ResponseEntity<UserResponse> patchAuthenticatedUser(@AuthenticationPrincipal User user,
+                                                               @RequestBody Map<String, String> fields) {
         User updatedUser = userService.patch(user.getId(), fields);
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(toResponse(updatedUser));
     }
 
-    // DELETE - Deletar a própria conta
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteAuthenticatedUser(@AuthenticationPrincipal User user) {
         userService.delete(user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    private UserResponse toResponse(User user) {
+        return new UserResponse(user.getId(), user.getName(), user.getEmail());
     }
 }

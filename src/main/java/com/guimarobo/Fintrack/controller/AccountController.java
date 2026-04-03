@@ -1,5 +1,6 @@
 package com.guimarobo.Fintrack.controller;
 
+import com.guimarobo.Fintrack.dto.AccountResponse;
 import com.guimarobo.Fintrack.model.Account;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.AccountService;
@@ -23,34 +24,37 @@ public class AccountController {
     }
 
     @PostMapping
-    public ResponseEntity<Account> createAccount(@Valid @RequestBody Account account,
-                                                 @AuthenticationPrincipal User user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.save(account, user));
+    public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody Account account,
+                                                         @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(accountService.save(account, user)));
     }
 
     @GetMapping
-    public ResponseEntity<List<Account>> getAllAccounts(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(accountService.findAll(user));
+    public ResponseEntity<List<AccountResponse>> getAllAccounts(@AuthenticationPrincipal User user) {
+        List<AccountResponse> responses = accountService.findAll(user).stream()
+                .map(this::toResponse)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Account> getAccountById(@PathVariable Long id,
-                                                  @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(accountService.findById(id, user));
+    public ResponseEntity<AccountResponse> getAccountById(@PathVariable Long id,
+                                                          @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(toResponse(accountService.findById(id, user)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Account> updateAccount(@PathVariable Long id,
-                                                 @Valid @RequestBody Account updatedAccount,
-                                                 @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(accountService.update(id, updatedAccount, user));
+    public ResponseEntity<AccountResponse> updateAccount(@PathVariable Long id,
+                                                         @RequestBody Account updatedAccount,
+                                                         @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(toResponse(accountService.update(id, updatedAccount, user)));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Account> patchAccount(@PathVariable Long id,
-                                                @RequestBody Map<String, String> fields,
-                                                @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(accountService.patch(id, fields, user));
+    public ResponseEntity<AccountResponse> patchAccount(@PathVariable Long id,
+                                                        @RequestBody Map<String, String> fields,
+                                                        @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(toResponse(accountService.patch(id, fields, user)));
     }
 
     @DeleteMapping("/{id}")
@@ -58,5 +62,10 @@ public class AccountController {
                                               @AuthenticationPrincipal User user) {
         accountService.delete(id, user);
         return ResponseEntity.noContent().build();
+    }
+
+    private AccountResponse toResponse(Account account) {
+        return new AccountResponse(account.getId(), account.getBankName(),
+                account.getAccountType(), account.getBalance());
     }
 }

@@ -1,5 +1,6 @@
 package com.guimarobo.Fintrack.service;
 
+import com.guimarobo.Fintrack.dto.TransactionReportResponse;
 import com.guimarobo.Fintrack.model.Transaction;
 import com.guimarobo.Fintrack.model.User;
 
@@ -13,4 +14,5 @@ public interface TransactionService {
     Transaction update(Long id, Transaction updatedTransaction, User user);
     Transaction patch(Long id, Map<String, String> fields, User user);
     void delete(Long id, User user);
+    TransactionReportResponse generateReport(User user, int mes, int ano);
 }

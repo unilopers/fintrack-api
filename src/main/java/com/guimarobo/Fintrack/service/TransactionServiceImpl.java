@@ -11,6 +11,8 @@ import com.guimarobo.Fintrack.repository.TransactionRepository;
 import com.guimarobo.Fintrack.worker.TransactionCategorizationWorker;
 import com.guimarobo.Fintrack.worker.LowBalanceAlertWorker;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,6 +42,11 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public List<Transaction> findAll(User user) {
         return transactionRepository.findByAccountUser(user);
+    }
+
+    @Override
+    public Page<Transaction> findAll(User user, Pageable pageable) {
+        return transactionRepository.findByAccountUser(user, pageable);
     }
 
     @Override

@@ -5,6 +5,9 @@ import com.guimarobo.Fintrack.model.Account;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.AccountService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,10 +33,18 @@ public class AccountController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AccountResponse>> getAllAccounts(@AuthenticationPrincipal User user) {
-        List<AccountResponse> responses = accountService.findAll(user).stream()
-                .map(this::toResponse)
-                .toList();
+    public ResponseEntity<Page<AccountResponse>> getAllAccounts(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "bankName") String sort,
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+
+        Page<AccountResponse> responses = accountService.findAll(user, pageRequest)
+                .map(this::toResponse);
         return ResponseEntity.ok(responses);
     }
 

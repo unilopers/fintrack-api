@@ -6,6 +6,9 @@ import com.guimarobo.Fintrack.model.Transaction;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.service.TransactionService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,10 +35,18 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TransactionResponse>> getAllTransactions(@AuthenticationPrincipal User user) {
-        List<TransactionResponse> responses = transactionService.findAll(user).stream()
-                .map(this::toResponse)
-                .toList();
+    public ResponseEntity<Page<TransactionResponse>> getAllTransactions(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "date") String sort,
+            @RequestParam(defaultValue = "desc") String direction) {
+
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+
+        Page<TransactionResponse> responses = transactionService.findAll(user, pageRequest)
+                .map(this::toResponse);
         return ResponseEntity.ok(responses);
     }
 

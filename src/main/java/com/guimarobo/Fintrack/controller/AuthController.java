@@ -2,6 +2,7 @@ package com.guimarobo.Fintrack.controller;
 
 import com.guimarobo.Fintrack.dto.LoginRequest;
 import com.guimarobo.Fintrack.dto.LoginResponse;
+import com.guimarobo.Fintrack.dto.MessageResponse;
 import com.guimarobo.Fintrack.dto.RegisterRequest;
 import com.guimarobo.Fintrack.security.JwtProvider;
 import com.guimarobo.Fintrack.service.UserService;
@@ -32,9 +33,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
         userService.register(request.getName(), request.getEmail(), request.getPassword());
-        return ResponseEntity.status(HttpStatus.CREATED).body("Usuário registrado com sucesso.");
+        return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponse("Usuário registrado com sucesso."));
     }
 
     @PostMapping("/login")

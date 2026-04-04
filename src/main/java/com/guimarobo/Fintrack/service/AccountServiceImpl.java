@@ -5,6 +5,8 @@ import com.guimarobo.Fintrack.model.Account;
 import com.guimarobo.Fintrack.model.User;
 import com.guimarobo.Fintrack.repository.AccountRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,11 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public List<Account> findAll(User user) {
         return accountRepository.findByUser(user);
+    }
+
+    @Override
+    public Page<Account> findAll(User user, Pageable pageable) {
+        return accountRepository.findByUser(user, pageable);
     }
 
     @Override
